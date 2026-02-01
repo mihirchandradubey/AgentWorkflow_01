@@ -1,0 +1,380 @@
+# Workflow Configuration
+
+# This file defines how agents work together to enforce compliance
+
+# Workflow definitions
+workflows:
+  # Triggered when a user opens a workbook
+  WORKBOOK_OPEN:
+    description: "Validate access and check workbook state on open"
+    agents:
+      - name: access_control
+        blocking: true
+        timeout: 5000
+        config:
+          action: "OPEN"
+          
+      - name: audit_trail
+        blocking: false
+        timeout: 2000
+        config:
+          event_type: "WORKBOOK_OPEN"
+          
+      - name: formula_verification
+        blocking: false
+        timeout: 10000
+        config:
+          quick_check: true
+          
+      - name: data_validation
+        blocking: false
+        timeout: 15000
+        config:
+          sample_validation: true
+          sample_size: 100
+          
+      - name: compliance_checker
+        blocking: false
+        timeout: 5000
+        config:
+          generate_dashboard: true
+
+  # Triggered when a user changes a formula
+  FORMULA_CHANGE:
+    description: "Validate and approve formula changes"
+    agents:
+      - name: access_control
+        blocking: true
+        timeout: 5000
+        config:
+          action: "EDIT_FORMULA"
+          
+      - name: formula_verification
+        blocking: true
+        timeout: 10000
+        config:
+          detect_errors: true
+          check_circular: true
+          compare_template: true
+          
+      - name: change_management
+        blocking: true
+        timeout: 30000
+        config:
+          require_approval: true
+          change_type: "FORMULA"
+          
+      - name: testing_validation
+        blocking: true
+        timeout: 60000
+        config:
+          run_unit_tests: true
+          run_regression_tests: true
+          
+      - name: audit_trail
+        blocking: false
+        timeout: 2000
+        config:
+          event_type: "FORMULA_CHANGE"
+          capture_before_after: true
+          
+      - name: compliance_checker
+        blocking: false
+        timeout: 5000
+        config:
+          recheck_compliance: true
+
+  # Triggered when a user changes data
+  DATA_CHANGE:
+    description: "Validate data quality on changes"
+    agents:
+      - name: access_control
+        blocking: true
+        timeout: 5000
+        config:
+          action: "EDIT_DATA"
+          
+      - name: data_validation
+        blocking: true
+        timeout: 20000
+        config:
+          validate_changed_cells: true
+          check_consistency: true
+          
+      - name: audit_trail
+        blocking: false
+        timeout: 2000
+        config:
+          event_type: "DATA_CHANGE"
+          capture_before_after: true
+          
+      - name: compliance_checker
+        blocking: false
+        timeout: 3000
+
+  # Triggered when user runs calculation
+  CALCULATION:
+    description: "Validate before and after calculation"
+    agents:
+      - name: access_control
+        blocking: true
+        timeout: 5000
+        config:
+          action: "CALCULATE"
+          
+      - name: data_validation
+        blocking: true
+        timeout: 30000
+        config:
+          full_validation: true
+          
+      - name: formula_verification
+        blocking: true
+        timeout: 15000
+        config:
+          verify_all_formulas: true
+          
+      - name: testing_validation
+        blocking: false
+        timeout: 60000
+        config:
+          run_validation_tests: true
+          
+      - name: audit_trail
+        blocking: false
+        timeout: 2000
+        config:
+          event_type: "CALCULATION"
+          
+      - name: compliance_checker
+        blocking: false
+        timeout: 10000
+        config:
+          full_compliance_check: true
+
+  # Triggered when user approves results
+  APPROVAL:
+    description: "Record approval with segregation of duties check"
+    agents:
+      - name: access_control
+        blocking: true
+        timeout: 5000
+        config:
+          action: "APPROVE"
+          check_segregation_of_duties: true
+          
+      - name: compliance_checker
+        blocking: true
+        timeout: 10000
+        config:
+          verify_ready_for_approval: true
+          
+      - name: audit_trail
+        blocking: false
+        timeout: 2000
+        config:
+          event_type: "APPROVAL"
+          capture_approver: true
+
+  # Scheduled compliance review
+  SCHEDULED_REVIEW:
+    description: "Daily compliance check"
+    agents:
+      - name: data_validation
+        blocking: false
+        timeout: 120000
+        config:
+          full_validation: true
+          
+      - name: formula_verification
+        blocking: false
+        timeout: 60000
+        config:
+          verify_all_formulas: true
+          
+      - name: testing_validation
+        blocking: false
+        timeout: 180000
+        config:
+          run_all_tests: true
+          
+      - name: audit_trail
+        blocking: false
+        timeout: 10000
+        config:
+          verify_log_integrity: true
+          
+      - name: compliance_checker
+        blocking: false
+        timeout: 30000
+        config:
+          generate_report: true
+          send_notification: true
+
+# Global configuration
+global:
+  # Default timeout for agents (milliseconds)
+  default_timeout: 30000
+  
+  # Retry policy
+  retry:
+    max_attempts: 3
+    backoff: exponential
+    initial_delay: 1000
+    max_delay: 10000
+  
+  # Error handling
+  error_handling:
+    on_agent_failure: "continue" # or "halt"
+    on_blocking_agent_failure: "halt"
+    log_errors: true
+    alert_on_critical: true
+  
+  # Monitoring
+  monitoring:
+    track_performance: true
+    track_success_rate: true
+    alert_thresholds:
+      response_time_p95: 5000 # ms
+      error_rate: 0.05 # 5%
+
+# Agent-specific configuration
+agents:
+  access_control:
+    enabled: true
+    authentication:
+      method: "SSO"
+      provider: "Azure AD"
+    roles:
+      - name: "Viewer"
+        permissions: ["READ"]
+      - name: "Editor"
+        permissions: ["READ", "EDIT_DATA"]
+      - name: "Approver"
+        permissions: ["READ", "APPROVE", "CERTIFY"]
+      - name: "Admin"
+        permissions: ["READ", "EDIT_DATA", "EDIT_FORMULA", "MANAGE_ACCESS"]
+
+  audit_trail:
+    enabled: true
+    storage:
+      type: "database"
+      connection_string: "${DATABASE_URL}"
+      retention_days: 2555 # 7 years
+    integrity:
+      hash_algorithm: "SHA256"
+      verify_on_read: true
+
+  data_validation:
+    enabled: true
+    rules_source: "COMPLIANCE_RULES.md"
+    cache:
+      enabled: true
+      ttl: 3600 # 1 hour
+    tolerances:
+      portfolio_total: 0.0001 # 0.01%
+
+  formula_verification:
+    enabled: true
+    approved_templates:
+      storage: "templates/approved_formulas.xlsx"
+      version: "2.1.0"
+    error_types:
+      - "#REF!"
+      - "#DIV/0!"
+      - "#VALUE!"
+      - "#N/A"
+      - "#NAME?"
+      - "#NULL!"
+      - "#NUM!"
+
+  compliance_checker:
+    enabled: true
+    rules_source: "COMPLIANCE_RULES.md"
+    check_frequency:
+      continuous: true
+      scheduled: "0 2 * * *" # 2 AM daily
+    reporting:
+      generate_reports: true
+      recipients:
+        - "risk.manager@bank.com"
+        - "compliance@bank.com"
+
+  change_management:
+    enabled: true
+    approval_workflows:
+      FORMULA:
+        approvers: ["MANAGER", "RISK_OFFICER"]
+        testing_required: true
+      DATA_STRUCTURE:
+        approvers: ["MANAGER"]
+        testing_required: true
+    version_control:
+      enabled: true
+      backend: "git"
+
+  testing_validation:
+    enabled: true
+    test_suites:
+      unit_tests: "tests/unit_tests.yaml"
+      regression_tests: "tests/regression_tests.yaml"
+      edge_cases: "tests/edge_cases.yaml"
+    tolerances:
+      calculation_variance: 0.0001 # 0.01%
+
+# Notification configuration
+notifications:
+  channels:
+    - type: "email"
+      enabled: true
+      smtp_config:
+        host: "${SMTP_HOST}"
+        port: 587
+        
+    - type: "slack"
+      enabled: true
+      webhook_url: "${SLACK_WEBHOOK_URL}"
+      
+    - type: "dashboard"
+      enabled: true
+      
+  rules:
+    - trigger: "compliance_violation"
+      severity: "CRITICAL"
+      channels: ["email", "slack"]
+      recipients: ["risk.manager@bank.com"]
+      
+    - trigger: "suspicious_activity"
+      severity: "HIGH"
+      channels: ["email", "slack"]
+      recipients: ["security@bank.com"]
+      
+    - trigger: "validation_failed"
+      severity: "MEDIUM"
+      channels: ["dashboard"]
+      
+    - trigger: "daily_report"
+      severity: "INFO"
+      channels: ["email"]
+      recipients: ["euc.team@bank.com"]
+
+# Schedule configuration
+schedules:
+  - name: "daily_compliance_review"
+    workflow: "SCHEDULED_REVIEW"
+    cron: "0 2 * * *" # 2 AM daily
+    enabled: true
+    
+  - name: "weekly_detailed_report"
+    workflow: "SCHEDULED_REVIEW"
+    cron: "0 6 * * 1" # 6 AM Monday
+    enabled: true
+    config:
+      detailed: true
+      
+  - name: "monthly_integrity_check"
+    workflow: "SCHEDULED_REVIEW"
+    cron: "0 3 1 * *" # 3 AM first day of month
+    enabled: true
+    config:
+      full_integrity_check: true
