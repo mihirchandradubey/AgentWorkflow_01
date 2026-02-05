@@ -1,0 +1,99 @@
+# Transformation Templates for Pega to Camunda Migration
+
+# BPMN Template Configurations
+bpmn_templates:
+  
+  # User Task Template
+  user_task_template:
+    default_properties:
+      async: false
+      exclusive: true
+    extensions:
+      - taskListener
+      - formData
+    
+  # Service Task Template
+  service_task_template:
+    default_properties:
+      async: true
+      exclusive: true
+    implementation_types:
+      - javaDelegate
+      - expression
+      - externalTask
+  
+  # Business Rule Task Template
+  business_rule_task_template:
+    default_properties:
+      async: false
+    result_variable: ruleResult
+    decision_ref_pattern: "decision_{id}"
+
+# DMN Template Configurations
+dmn_templates:
+  
+  # Decision Table Template
+  decision_table_template:
+    hit_policy: FIRST
+    default_input_type: string
+    default_output_type: string
+    
+  # Input Expression Template
+  input_expression_template:
+    type_ref: string
+    expression_language: juel
+
+# Process Template Patterns
+process_patterns:
+  
+  # Simple Approval Pattern
+  approval_pattern:
+    elements:
+      - startEvent
+      - userTask_submit
+      - userTask_approve
+      - exclusiveGateway_decision
+      - endEvent_approved
+      - endEvent_rejected
+    
+  # Escalation Pattern
+  escalation_pattern:
+    elements:
+      - startEvent
+      - userTask_primary
+      - boundaryEvent_timer
+      - userTask_escalated
+      - endEvent
+
+# Naming Conventions
+naming_conventions:
+  element_id_prefix:
+    userTask: "Task_"
+    serviceTask: "Service_"
+    businessRuleTask: "Decision_"
+    startEvent: "Start_"
+    endEvent: "End_"
+    exclusiveGateway: "Gateway_"
+    
+  sequence_flow_naming:
+    default: "Flow_"
+    conditional: "Condition_"
+    
+  variable_naming:
+    camelCase: true
+    prefix_process_vars: false
+
+# Code Generation Templates
+code_templates:
+  
+  # Java Delegate Template
+  java_delegate:
+    package: "com.example.delegates"
+    imports:
+      - "org.camunda.bpm.engine.delegate.DelegateExecution"
+      - "org.camunda.bpm.engine.delegate.JavaDelegate"
+    
+  # Spring Bean Template
+  spring_bean:
+    annotation: "@Component"
+    naming_pattern: "{name}Delegate"

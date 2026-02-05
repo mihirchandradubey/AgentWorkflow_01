@@ -1,0 +1,125 @@
+# Validation Rules for BPMN Quality Checks
+
+# BPMN Structure Validation
+structure_validation:
+  
+  # Process Level Checks
+  process_checks:
+    - name: "process_has_id"
+      description: "Process must have an ID attribute"
+      severity: error
+      
+    - name: "process_has_name"
+      description: "Process should have a descriptive name"
+      severity: warning
+      
+    - name: "process_is_executable"
+      description: "Process should be marked as executable"
+      severity: warning
+  
+  # Start Event Checks
+  start_event_checks:
+    - name: "has_start_event"
+      description: "Process must have at least one start event"
+      severity: error
+      
+    - name: "single_start_event"
+      description: "Process should have exactly one start event"
+      severity: warning
+  
+  # End Event Checks
+  end_event_checks:
+    - name: "has_end_event"
+      description: "Process should have at least one end event"
+      severity: warning
+      
+    - name: "all_paths_end"
+      description: "All execution paths should end at an end event"
+      severity: error
+
+# Element Validation
+element_validation:
+  
+  # Task Validation
+  task_validation:
+    - name: "task_has_name"
+      description: "Tasks should have descriptive names"
+      severity: warning
+      min_name_length: 3
+      
+    - name: "user_task_has_assignment"
+      description: "User tasks should have assignee or candidate groups"
+      severity: warning
+      
+    - name: "service_task_has_implementation"
+      description: "Service tasks must have implementation defined"
+      severity: error
+  
+  # Gateway Validation
+  gateway_validation:
+    - name: "gateway_has_name"
+      description: "Gateways should have descriptive names"
+      severity: info
+      
+    - name: "gateway_has_multiple_paths"
+      description: "Gateways should have more than one outgoing path"
+      severity: warning
+      
+    - name: "exclusive_gateway_has_default"
+      description: "Exclusive gateways should define a default path"
+      severity: warning
+
+# Sequence Flow Validation
+flow_validation:
+  
+  - name: "flow_has_valid_source"
+    description: "Sequence flow source must reference existing element"
+    severity: error
+    
+  - name: "flow_has_valid_target"
+    description: "Sequence flow target must reference existing element"
+    severity: error
+    
+  - name: "no_dangling_flows"
+    description: "All flows must connect valid elements"
+    severity: error
+
+# Best Practices
+best_practices:
+  
+  naming:
+    - use_descriptive_names
+    - avoid_technical_ids_as_names
+    - use_consistent_naming_convention
+    
+  structure:
+    - limit_subprocess_depth_to_3
+    - avoid_too_many_gateways
+    - use_subprocesses_for_complex_logic
+    
+  performance:
+    - use_async_for_service_tasks
+    - consider_parallel_execution
+    - avoid_long_running_transactions
+
+# Quality Thresholds
+quality_thresholds:
+  max_elements_per_process: 50
+  max_nesting_depth: 3
+  max_outgoing_flows_per_gateway: 5
+  min_task_name_length: 3
+  max_cyclomatic_complexity: 15
+
+# Auto-Fix Suggestions
+auto_fix_suggestions:
+  missing_process_id:
+    action: "generate_id"
+    pattern: "Process_{timestamp}"
+    
+  missing_task_name:
+    action: "use_id_as_name"
+    format: "Task {id}"
+    
+  missing_end_event:
+    action: "suggest_add_end_event"
+    message: "Add end event to complete execution path"
