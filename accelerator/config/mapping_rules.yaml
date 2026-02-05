@@ -1,0 +1,106 @@
+# Pega to Camunda Element Mapping Configuration
+
+# Mapping rules for converting Pega elements to Camunda BPMN elements
+element_mappings:
+  
+  # Flow Actions map to User Tasks
+  FlowAction:
+    camunda_type: userTask
+    property_mappings:
+      action_name: formKey
+      description: documentation
+    transform:
+      add_candidate_groups: true
+  
+  # Assignments become User Tasks with group assignment
+  Assignment:
+    camunda_type: userTask
+    property_mappings:
+      assignee: candidateGroups
+      work_basket: candidateGroups
+    transform:
+      add_candidate_groups: true
+  
+  # Decision Rules can be Business Rule Tasks or Gateways
+  Decision:
+    camunda_type: businessRuleTask
+    property_mappings:
+      rule_name: decisionRef
+      decision_table: decisionRef
+    transform:
+      convert_to_dmn: true
+  
+  # Connectors become Service Tasks
+  Connector:
+    camunda_type: serviceTask
+    property_mappings:
+      endpoint: implementation
+      method: implementation
+    transform:
+      add_delegate_expression: true
+  
+  Integration:
+    camunda_type: serviceTask
+    property_mappings:
+      service_endpoint: implementation
+    transform:
+      add_delegate_expression: true
+  
+  # Wait shapes become Timer Events
+  Wait:
+    camunda_type: intermediateCatchEvent
+    event_definition: timerEventDefinition
+    property_mappings:
+      duration: timeDuration
+      wait_time: timeDuration
+  
+  # Subprocesses
+  SubProcess:
+    camunda_type: callActivity
+    property_mappings:
+      subprocess_ref: calledElement
+  
+  SubFlow:
+    camunda_type: callActivity
+    property_mappings:
+      flow_ref: calledElement
+
+# SLA Rule Conversions
+sla_mappings:
+  goal:
+    boundary_event_type: timer
+    timer_type: timeDuration
+    canceling: false
+  
+  deadline:
+    boundary_event_type: timer
+    timer_type: timeDuration
+    canceling: true
+
+# Gateway Mappings
+gateway_mappings:
+  exclusive:
+    camunda_type: exclusiveGateway
+  
+  parallel:
+    camunda_type: parallelGateway
+  
+  inclusive:
+    camunda_type: inclusiveGateway
+
+# Data Type Mappings
+data_type_mappings:
+  Text: string
+  Number: long
+  Decimal: double
+  Date: date
+  DateTime: date
+  Boolean: boolean
+  True/False: boolean
+
+# Default Configuration
+defaults:
+  process_executable: true
+  use_embedded_subprocess: false
+  generate_dmn_for_decisions: true
+  add_boundary_timers_for_sla: true

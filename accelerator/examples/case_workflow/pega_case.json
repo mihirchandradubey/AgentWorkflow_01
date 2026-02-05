@@ -1,0 +1,128 @@
+{
+  "name": "CustomerOnboardingCase",
+  "type": "pega_workflow",
+  "metadata": {
+    "description": "Multi-stage customer onboarding process",
+    "version": "2.0",
+    "sla_rules": [
+      {
+        "name": "OnboardingDeadline",
+        "duration": "5",
+        "unit": "days"
+      }
+    ],
+    "routing_rules": []
+  },
+  "elements": [
+    {
+      "id": "STAGE1_INIT",
+      "name": "Initialize Onboarding",
+      "type": "FlowAction",
+      "properties": {
+        "form": "OnboardingForm",
+        "action": "create"
+      }
+    },
+    {
+      "id": "STAGE1_VERIFY",
+      "name": "Verify Customer Information",
+      "type": "Assignment",
+      "assignee": "verification_team",
+      "properties": {
+        "priority": "high"
+      }
+    },
+    {
+      "id": "STAGE2_KYC",
+      "name": "KYC Check",
+      "type": "Connector",
+      "properties": {
+        "endpoint": "https://api.kyc-provider.com/verify",
+        "method": "POST",
+        "service_type": "external"
+      }
+    },
+    {
+      "id": "STAGE2_DECISION",
+      "name": "KYC Result Decision",
+      "type": "Decision",
+      "rule": "KYCResultRule",
+      "properties": {
+        "conditions": [
+          {"name": "status", "field": "kycStatus", "type": "string"}
+        ],
+        "rules": [
+          {
+            "conditions": [{"expression": "kycStatus == 'APPROVED'"}],
+            "result": "proceed"
+          },
+          {
+            "conditions": [{"expression": "kycStatus == 'REJECTED'"}],
+            "result": "reject"
+          }
+        ]
+      }
+    },
+    {
+      "id": "STAGE3_ACCOUNT",
+      "name": "Create Account",
+      "type": "Connector",
+      "properties": {
+        "endpoint": "https://api.banking.com/accounts",
+        "method": "POST"
+      }
+    },
+    {
+      "id": "STAGE3_WELCOME",
+      "name": "Send Welcome Package",
+      "type": "Connector",
+      "properties": {
+        "endpoint": "https://api.communication.com/send",
+        "method": "POST"
+      }
+    }
+  ],
+  "connectors": [
+    {"id": "C1", "source": "STAGE1_INIT", "target": "STAGE1_VERIFY"},
+    {"id": "C2", "source": "STAGE1_VERIFY", "target": "STAGE2_KYC"},
+    {"id": "C3", "source": "STAGE2_KYC", "target": "STAGE2_DECISION"},
+    {"id": "C4", "source": "STAGE2_DECISION", "target": "STAGE3_ACCOUNT", "condition": "approved"},
+    {"id": "C5", "source": "STAGE3_ACCOUNT", "target": "STAGE3_WELCOME"}
+  ],
+  "stages": [
+    {
+      "id": "Stage1",
+      "name": "Information Gathering",
+      "order": 1,
+      "steps": [
+        {"id": "STAGE1_INIT", "name": "Initialize", "type": "FlowAction"},
+        {"id": "STAGE1_VERIFY", "name": "Verify", "type": "Assignment"}
+      ]
+    },
+    {
+      "id": "Stage2",
+      "name": "Verification",
+      "order": 2,
+      "steps": [
+        {"id": "STAGE2_KYC", "name": "KYC Check", "type": "Connector"},
+        {"id": "STAGE2_DECISION", "name": "Decision", "type": "Decision"}
+      ]
+    },
+    {
+      "id": "Stage3",
+      "name": "Account Setup",
+      "order": 3,
+      "steps": [
+        {"id": "STAGE3_ACCOUNT", "name": "Create Account", "type": "Connector"},
+        {"id": "STAGE3_WELCOME", "name": "Welcome", "type": "Connector"}
+      ]
+    }
+  ],
+  "caseTypes": [
+    {
+      "id": "CT001",
+      "name": "CustomerOnboarding",
+      "description": "Customer onboarding case type"
+    }
+  ]
+}

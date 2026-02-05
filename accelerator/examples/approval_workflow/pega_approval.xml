@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow name="PurchaseApprovalWorkflow" version="1.0" description="Simple purchase approval workflow">
+  <Metadata>
+    <SLA name="ApprovalDeadline" duration="24" unit="hours"/>
+    <RoutingRule name="ManagerRouting" condition="amount > 1000" target="ManagerApproval"/>
+  </Metadata>
+  
+  <Elements>
+    <FlowAction id="FA001" name="Submit Purchase Request">
+      <Property name="form" value="PurchaseRequestForm"/>
+      <Property name="action_type" value="submit"/>
+    </FlowAction>
+    
+    <Decision id="DEC001" name="Check Amount" rule="AmountDecision">
+      <Property name="field" value="purchaseAmount"/>
+      <Property name="threshold" value="1000"/>
+    </Decision>
+    
+    <Assignment id="ASN001" name="Team Lead Approval" assignee="team_leads">
+      <Property name="priority" value="high"/>
+    </Assignment>
+    
+    <Assignment id="ASN002" name="Manager Approval" assignee="managers">
+      <Property name="priority" value="high"/>
+      <Property name="escalation" value="true"/>
+    </Assignment>
+    
+    <Connector id="CONN001" name="Send Notification" type="REST">
+      <Property name="endpoint" value="https://api.example.com/notify"/>
+      <Property name="method" value="POST"/>
+    </Connector>
+  </Elements>
+  
+  <Connectors>
+    <Connector id="C1" source="FA001" target="DEC001" type="sequence"/>
+    <Connector id="C2" source="DEC001" target="ASN001" type="sequence" condition="amount &lt;= 1000"/>
+    <Connector id="C3" source="DEC001" target="ASN002" type="sequence" condition="amount &gt; 1000"/>
+    <Connector id="C4" source="ASN001" target="CONN001" type="sequence"/>
+    <Connector id="C5" source="ASN002" target="CONN001" type="sequence"/>
+  </Connectors>
+</Workflow>
